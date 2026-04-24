@@ -1,0 +1,3 @@
+cd "/Users/ankitmaholiya/Documents/Ankit/projects/trading journal"
+source venv/bin/activate
+python server/app.py

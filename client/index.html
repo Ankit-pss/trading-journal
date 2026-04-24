@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>TradeTrack</title>
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              background: "#0a0a0f",
+              surface: "#111118",
+              primary: "#00f0ff",
+              secondary: "#ff00ff",
+              success: "#00ffcc",
+              danger: "#ff3366",
+              dim: "#1f1f2e",
+              ontext: "#e0e0e0",
+            },
+            fontFamily: {
+              orbitron: ["Orbitron", "sans-serif"],
+              mono: ["JetBrains Mono", "monospace"]
+            }
+          },
+        },
+      }
+    </script>
+    <style>
+        body {
+            background-color: #0a0a0f;
+            color: #e0e0e0;
+            font-family: 'JetBrains Mono', monospace;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        /* Glassmorphism Classes */
+        .glass {
+            background: rgba(17, 17, 24, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .glass-panel {
+            background: rgba(31, 31, 46, 0.5);
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(0, 240, 255, 0.1);
+        }
+
+        /* Glow effects */
+        .neon-blue-glow {
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.15);
+            border: 1px solid rgba(0, 240, 255, 0.4);
+        }
+        
+        .neon-pink-glow {
+            box-shadow: 0 0 15px rgba(255, 0, 255, 0.15);
+            border: 1px solid rgba(255, 0, 255, 0.4);
+        }
+
+        .neon-border {
+            border: 1px solid;
+            border-image: linear-gradient(to right, #00f0ff, #ff00ff) 1;
+        }
+
+        /* Animations */
+        .tilt-card {
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
+            transform-style: preserve-3d;
+        }
+        .tilt-card:hover {
+            transform: translateY(-8px) scale(1.02) perspective(1000px) rotateX(2deg) rotateY(-2deg);
+            box-shadow: 0 15px 30px rgba(0, 240, 255, 0.2);
+            border-color: #00f0ff;
+        }
+
+        .nav-link {
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        .nav-link::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 0%;
+            width: 3px;
+            background: #00f0ff;
+            transition: height 0.3s ease;
+            box-shadow: 0 0 10px #00f0ff;
+        }
+        .nav-link:hover::before, .nav-link.active::before {
+            height: 80%;
+        }
+        .nav-link.active {
+            color: #00f0ff;
+            background: rgba(0, 240, 255, 0.05);
+        }
+
+        /* Forms */
+        input, select, textarea {
+            background-color: #111118 !important;
+            border: 1px solid #1f1f2e !important;
+            color: #e0e0e0 !important;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #00f0ff !important;
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.2) !important;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0a0a0f;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1f1f2e;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00f0ff;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.4s ease forwards;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="flex min-h-screen">
+
+    <!-- Left Sidebar -->
+    <aside class="w-64 glass border-r flex flex-col fixed h-full z-10 p-6 shadow-[4px_0_24px_rgba(0,0,0,0.5)]">
+        <div class="mb-10 text-center flex flex-col items-center gap-2">
+            <span class="material-symbols-outlined text-4xl text-primary drop-shadow-[0_0_8px_rgba(0,240,255,0.8)]">token</span>
+            <h1 class="font-orbitron font-bold text-2xl tracking-widest text-[#e0e0e0]">TRADE<span class="text-primary">TRACK</span></h1>
+        </div>
+        <nav class="flex flex-col gap-2 mt-4 text-sm font-semibold tracking-wider flex-grow">
+            <button onclick="navigate('dashboard')" id="nav-dashboard" class="nav-link active flex items-center gap-4 px-4 py-3 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white uppercase transition-colors">
+                <span class="material-symbols-outlined">grid_view</span> Dashboard
+            </button>
+            <button onclick="navigate('add-trade')" id="nav-add-trade" class="nav-link flex items-center gap-4 px-4 py-3 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white uppercase transition-colors">
+                <span class="material-symbols-outlined">add_box</span> Add Trade
+            </button>
+            <button onclick="navigate('history')" id="nav-history" class="nav-link flex items-center gap-4 px-4 py-3 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white uppercase transition-colors">
+                <span class="material-symbols-outlined">history</span> History
+            </button>
+            <button onclick="navigate('calendar')" id="nav-calendar" class="nav-link flex items-center gap-4 px-4 py-3 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white uppercase transition-colors">
+                <span class="material-symbols-outlined">calendar_month</span> Calendar
+            </button>
+            <button onclick="navigate('analytics')" id="nav-analytics" class="nav-link flex items-center gap-4 px-4 py-3 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white uppercase transition-colors">
+                <span class="material-symbols-outlined">bar_chart</span> Analytics
+            </button>
+        </nav>
+        
+        <div class="mt-auto opacity-50 flex items-center justify-center gap-2 text-xs">
+            <span class="material-symbols-outlined text-sm">terminal</span>
+            <span>SYSTEM_ONLINE // v1.0.0</span>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="ml-64 flex-1 p-10 relative overflow-hidden">
+        <!-- Subtle Background Glow Element -->
+        <div class="absolute top-[-20%] right-[-10%] w-[500px] h-[500px] bg-primary rounded-full blur-[150px] opacity-10 pointer-events-none z-0"></div>
+        <div class="absolute bottom-[-20%] left-1/2 w-[500px] h-[500px] bg-secondary rounded-full blur-[150px] opacity-10 pointer-events-none z-0"></div>
+
+        <div class="relative z-10 w-full max-w-7xl mx-auto space-y-8" id="content-area">
+            <!-- Global Filter Bar -->
+            <div class="glass-panel p-4 rounded-xl flex flex-wrap items-end gap-4 mb-2" id="global-filters">
+                <div>
+                    <label class="block text-[10px] uppercase text-gray-400 tracking-wider mb-1">Start Date</label>
+                    <input type="date" id="filter-start" class="rounded-lg px-3 py-2 text-sm border border-dim bg-surface focus:border-primary transition-colors text-gray-300">
+                </div>
+                <div>
+                    <label class="block text-[10px] uppercase text-gray-400 tracking-wider mb-1">End Date</label>
+                    <input type="date" id="filter-end" class="rounded-lg px-3 py-2 text-sm border border-dim bg-surface focus:border-primary transition-colors text-gray-300">
+                </div>
+                <div>
+                    <label class="block text-[10px] uppercase text-gray-400 tracking-wider mb-1">Asset</label>
+                    <input type="text" id="filter-asset" placeholder="ALL" class="w-24 rounded-lg px-3 py-2 text-sm border border-dim bg-surface focus:border-primary transition-colors text-gray-300 uppercase">
+                </div>
+                <div>
+                    <label class="block text-[10px] uppercase text-gray-400 tracking-wider mb-1">Strategy</label>
+                    <select id="filter-strategy" class="rounded-lg px-3 py-2 text-sm border border-dim bg-surface focus:border-primary transition-colors text-gray-300">
+                        <option value="">ALL STRATEGIES</option>
+                        <option value="Scalping">Scalping</option>
+                        <option value="Swing Trade">Swing Trade</option>
+                        <option value="Day Trade">Day Trade</option>
+                        <option value="Options">Options</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="ml-auto flex gap-2">
+                    <button onclick="clearFilters()" class="text-[10px] uppercase tracking-widest text-gray-400 hover:text-white border border-dim px-4 py-2 rounded-lg transition-colors">Clear</button>
+                    <button onclick="applyFilters()" class="text-[10px] uppercase tracking-widest text-black bg-primary hover:bg-[#00d0e0] px-4 py-2 rounded-lg font-bold shadow-[0_0_10px_rgba(0,240,255,0.3)] transition-colors">Apply Filters</button>
+                </div>
+            </div>
+            
+            <!-- Dynamic Content Injected Here via JS -->
+            <div id="view-dashboard" class="view-section fade-in">
+                <!-- Dashboard Content -->
+                <header class="mb-10 border-b border-primary/20 pb-4">
+                    <span class="text-primary text-xs uppercase tracking-[0.2em]">Live Telemetry</span>
+                    <h2 class="text-3xl font-orbitron font-bold mt-2">DASHBOARD</h2>
+                </header>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div class="tilt-card glass-panel neon-blue-glow p-6 rounded-2xl flex flex-col justify-between">
+                        <span class="text-xs tracking-widest text-gray-400 uppercase">Total Profit/Loss</span>
+                        <div class="mt-4"><span class="text-3xl font-bold text-success" id="stats-pnl">...</span></div>
+                    </div>
+                    <div class="tilt-card glass-panel neon-pink-glow p-6 rounded-2xl flex flex-col justify-between">
+                        <span class="text-xs tracking-widest text-gray-400 uppercase">Win Rate</span>
+                        <div class="mt-4"><span class="text-3xl font-bold text-secondary" id="stats-winrate">...</span></div>
+                    </div>
+                    <div class="tilt-card glass p-6 rounded-2xl border border-primary/20 flex flex-col justify-between">
+                        <span class="text-xs tracking-widest text-gray-400 uppercase">Total Trades</span>
+                        <div class="mt-4"><span class="text-3xl font-bold text-white" id="stats-total">...</span></div>
+                    </div>
+                    <div class="tilt-card glass p-6 rounded-2xl border border-primary/20 flex flex-col justify-between">
+                        <span class="text-xs tracking-widest text-gray-400 uppercase">Best / Worst</span>
+                        <div class="mt-4 flex flex-col">
+                            <span class="text-xl font-bold text-success" id="stats-best">...</span>
+                            <span class="text-sm font-bold text-danger" id="stats-worst">...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 glass-panel p-6 rounded-2xl relative">
+                        <h3 class="text-sm tracking-widest text-gray-300 uppercase mb-4">Equity Curve</h3>
+                        <div class="h-64 w-full">
+                            <canvas id="equityChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="glass-panel p-6 rounded-2xl relative">
+                        <h3 class="text-sm tracking-widest text-gray-300 uppercase mb-4">Win/Loss Ratio</h3>
+                        <div class="h-64 w-full flex items-center justify-center">
+                            <canvas id="ratioChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Other views are hidden by default -->
+            <div id="view-add-trade" class="view-section hidden">
+                <header class="mb-10 border-b border-primary/20 pb-4 flex justify-between items-end">
+                    <div>
+                        <span id="form-subtitle" class="text-primary text-xs uppercase tracking-[0.2em]">New Entry</span>
+                        <h2 id="form-title" class="text-3xl font-orbitron font-bold mt-2">ADD TRADE</h2>
+                    </div>
+                    <div class="text-right hidden md:block">
+                        <span class="text-primary text-[10px] uppercase tracking-widest block mb-1">System Time</span>
+                        <div id="live-clock" class="text-xl font-jetbrains text-white font-bold tracking-widest drop-shadow-[0_0_8px_rgba(0,240,255,0.5)]">00:00:00</div>
+                    </div>
+                </header>
+                <div class="glass-panel p-8 rounded-2xl max-w-3xl mx-auto shadow-[0_0_40px_rgba(0,240,255,0.05)] border border-primary/40 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-primary blur-[70px] opacity-20 pointer-events-none"></div>
+                    <form id="addTradeForm" class="space-y-6 relative z-10" onsubmit="submitTrade(event)">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-xs uppercase text-gray-400 tracking-wider mb-2">Asset Ticker</label>
+                                <input type="text" id="t-asset" required placeholder="e.g. BTC, TSLA" class="w-full rounded-lg px-4 py-3 border border-dim bg-surface focus:border-primary transition-colors uppercase" />
+                            </div>
+                            <div>
+                                <label class="block text-xs uppercase text-gray-400 tracking-wider mb-2">Date & Time</label>
+                                <input type="datetime-local" step="1" id="t-date" required class="w-full rounded-lg px-4 py-3 border border-dim bg-surface focus:border-primary transition-colors" />
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div>
+                                <label class="block text-xs uppercase text-gray-400 tracking-wider mb-2">Trade Type</label>
+                                <select id="t-type" class="w-full rounded-lg px-4 py-3 border border-dim bg-surface focus:border-primary transition-colors">
+                                    <option value="BUY">BUY / LONG</option>
+                                    <option value="SELL">SELL / SHORT</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs uppercase text-gray-400 tracking-wider mb-2">Strategy</label>
+                                <select id="t-strategy" class="w-full rounded-lg px-4 py-3 border border-dim bg-surface focus:border-primary transition-colors">
+                                    <option value="Scalping">Scalping</option>
+                                    <option value="Swing Trade">Swing Trade</option>
+                                    <option value="Day Trade">Day Trade</option>
+                                    <option value="Options">Options</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs uppercase text-gray-400 tracking-wider mb-2">Quantity</label>
+                                <input type="number" step="0.0001" min="0" required id="t-quantity" class="w-full rounded-lg px-4 py-3 border border-dim bg-surface focus:border-primary transition-colors" />
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                            <div>
+                                <label class="block text-xs uppercase text-gray-400 tracking-wider mb-2">Entry Price ($)</label>
+                                <input type="number" step="0.0001" min="0" required id="t-entry" class="w-full rounded-lg px-4 py-3 border border-dim bg-surface focus:border-primary transition-colors" />
+                            </div>
+                            <div>
+                                <label class="block text-xs uppercase text-gray-400 tracking-wider mb-2">Stoploss ($)</label>
+                                <input type="number" step="0.0001" min="0" id="t-stoploss" class="w-full rounded-lg px-4 py-3 border border-dim bg-surface focus:border-primary transition-colors" />
+                            </div>
+                            <div>
+                                <label class="block text-xs uppercase text-gray-400 tracking-wider mb-2">Target ($)</label>
+                                <input type="number" step="0.0001" min="0" id="t-target" class="w-full rounded-lg px-4 py-3 border border-dim bg-surface focus:border-primary transition-colors" />
+                            </div>
+                            <div>
+                                <label class="block text-xs uppercase text-gray-400 tracking-wider mb-2">Exit Price ($)</label>
+                                <input type="number" step="0.0001" min="0" id="t-exit" placeholder="Leave empty if open" class="w-full rounded-lg px-4 py-3 border border-dim bg-surface focus:border-primary transition-colors" />
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-xs uppercase text-gray-400 tracking-wider mb-2">Risk Amount ($)</label>
+                                <input type="number" step="0.0001" min="0" id="t-risk-amount" placeholder="Auto-calculated if empty" class="w-full rounded-lg px-4 py-3 border border-dim bg-surface focus:border-primary transition-colors" />
+                            </div>
+                            <div>
+                                <label class="block text-xs uppercase text-gray-400 tracking-wider mb-2">Reward Amount ($)</label>
+                                <input type="number" step="0.0001" min="0" id="t-reward-amount" placeholder="Auto-calculated if empty" class="w-full rounded-lg px-4 py-3 border border-dim bg-surface focus:border-primary transition-colors" />
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-xs uppercase text-gray-400 tracking-wider mb-2">Mistake Tags (Comma Separated)</label>
+                            <input type="text" id="t-mistakes" placeholder="e.g., late entry, overtrading, revenge trade" class="w-full rounded-lg px-4 py-3 border border-dim bg-surface focus:border-primary transition-colors" />
+                        </div>
+
+                        <div>
+                            <label class="block text-xs uppercase text-gray-400 tracking-wider mb-2">Operator Notes</label>
+                            <textarea id="t-notes" rows="3" placeholder="Reasoning, emotions, confluence..." class="w-full rounded-lg px-4 py-3 border border-dim bg-surface focus:border-primary transition-colors"></textarea>
+                        </div>
+                        
+                        <!-- Live Calculator Projections -->
+                        <div class="glass-panel p-5 rounded-lg border border-primary/20 bg-surface/50">
+                            <h3 class="text-xs tracking-widest text-primary uppercase mb-3 flex items-center gap-2">
+                                <span class="material-symbols-outlined text-[16px]">calculate</span> Live Projections
+                            </h3>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm font-jetbrains">
+                                <div><span class="text-gray-400 text-xs block uppercase">ETH Position</span> <span id="calc-eth" class="font-bold text-white text-lg">0.00</span></div>
+                                <div><span class="text-gray-400 text-xs block uppercase">Profit at Target</span> <span id="calc-profit" class="font-bold text-success text-lg">$0.00</span></div>
+                                <div><span class="text-gray-400 text-xs block uppercase">Loss at Stop</span> <span id="calc-loss" class="font-bold text-danger text-lg">$0.00</span></div>
+                                <div><span class="text-gray-400 text-xs block uppercase">Risk/Reward</span> <span id="calc-rr" class="font-bold text-secondary text-lg">0.0</span></div>
+                            </div>
+                        </div>
+
+                        
+                        <div>
+                            <label class="block text-xs uppercase text-gray-400 tracking-wider mb-2">Trade Photo (Optional)</label>
+                            <input type="file" id="t-photo" accept="image/*" class="w-full rounded-lg px-4 py-3 border border-dim bg-surface focus:border-primary transition-colors file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-black hover:file:bg-[#00d0e0]" />
+                        </div>
+                        
+                        <div class="pt-4 flex justify-end gap-4">
+                            <button type="button" id="cancel-edit-btn" onclick="cancelEdit()" class="hidden border border-dim hover:bg-white/5 text-gray-400 font-bold uppercase tracking-widest px-8 py-3 rounded-lg transition-all active:scale-95">
+                                CANCEL
+                            </button>
+                            <button type="submit" id="submit-trade-btn" class="bg-primary hover:bg-[#00d0e0] text-black font-bold uppercase tracking-widest px-10 py-3 rounded-lg shadow-[0_0_15px_rgba(0,240,255,0.4)] transition-all hover:scale-105 active:scale-95">
+                                LOG TRADE
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div id="view-history" class="view-section hidden">
+                <header class="mb-10 border-b border-primary/20 pb-4">
+                    <span class="text-primary text-xs uppercase tracking-[0.2em]">Archive</span>
+                    <h2 class="text-3xl font-orbitron font-bold mt-2">TRADE HISTORY</h2>
+                </header>
+                <div class="glass p-6 rounded-2xl overflow-x-auto border border-primary/20">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-dim/50">
+                                <th class="py-3 px-4 text-xs font-semibold uppercase tracking-widest text-gray-400">Date</th>
+                                <th class="py-3 px-4 text-xs font-semibold uppercase tracking-widest text-gray-400">Asset</th>
+                                <th class="py-3 px-4 text-xs font-semibold uppercase tracking-widest text-gray-400">Type</th>
+                                <th class="py-3 px-4 text-xs font-semibold uppercase tracking-widest text-gray-400">Strategy</th>
+                                <th class="py-3 px-4 text-xs font-semibold uppercase tracking-widest text-gray-400 text-right">Qty</th>
+                                <th class="py-3 px-4 text-xs font-semibold uppercase tracking-widest text-gray-400 text-right">P/L</th>
+                                <th class="py-3 px-4 text-xs font-semibold uppercase tracking-widest text-gray-400 text-center w-24">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-table-body" class="text-sm">
+                            <!-- Injected rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="view-analytics" class="view-section hidden">
+                <header class="mb-10 border-b border-primary/20 pb-4">
+                    <span class="text-primary text-xs uppercase tracking-[0.2em]">Deep Scan</span>
+                    <h2 class="text-3xl font-orbitron font-bold mt-2">PERFORMANCE ANALYTICS</h2>
+                </header>
+                
+                <!-- Insights Banner -->
+                <div id="analytics-insights" class="mb-8 flex flex-col gap-3">
+                    <!-- Injected dynamically -->
+                </div>
+
+                <!-- Global Metrics Grid -->
+                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-8">
+                    <div class="glass p-4 rounded-xl flex flex-col justify-between">
+                        <span class="text-[10px] tracking-widest text-gray-400 uppercase">Profit Factor</span>
+                        <div class="mt-2"><span class="text-xl font-bold text-white" id="an-pf">...</span></div>
+                    </div>
+                    <div class="glass p-4 rounded-xl flex flex-col justify-between">
+                        <span class="text-[10px] tracking-widest text-gray-400 uppercase">Expectancy</span>
+                        <div class="mt-2"><span class="text-xl font-bold text-primary" id="an-expectancy">...</span></div>
+                    </div>
+                    <div class="glass p-4 rounded-xl flex flex-col justify-between">
+                        <span class="text-[10px] tracking-widest text-gray-400 uppercase">Max Drawdown</span>
+                        <div class="mt-2"><span class="text-xl font-bold text-danger" id="an-drawdown">...</span></div>
+                    </div>
+                    <div class="glass p-4 rounded-xl flex flex-col justify-between">
+                        <span class="text-[10px] tracking-widest text-gray-400 uppercase">Avg Risk/Reward</span>
+                        <div class="mt-2"><span class="text-xl font-bold text-secondary" id="an-rr">...</span></div>
+                    </div>
+                    <div class="glass p-4 rounded-xl flex flex-col justify-between">
+                        <span class="text-[10px] tracking-widest text-gray-400 uppercase">Avg Win/Loss</span>
+                        <div class="mt-2 flex flex-col">
+                            <span class="text-sm font-bold text-success" id="an-avgwin">...</span>
+                            <span class="text-sm font-bold text-danger" id="an-avgloss">...</span>
+                        </div>
+                    </div>
+                    <div class="glass p-4 rounded-xl flex flex-col justify-between">
+                        <span class="text-[10px] tracking-widest text-gray-400 uppercase">Max Streaks</span>
+                        <div class="mt-2 flex flex-col">
+                            <span class="text-sm font-bold text-success" id="an-winstreak">...</span>
+                            <span class="text-sm font-bold text-danger" id="an-lossstreak">...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <!-- Distribution Chart -->
+                    <div class="glass-panel p-6 rounded-2xl relative">
+                        <h3 class="text-sm tracking-widest text-gray-300 uppercase mb-4 text-primary">Returns Distribution</h3>
+                        <div class="h-64 w-full flex items-center justify-center">
+                            <canvas id="distributionChart"></canvas>
+                        </div>
+                    </div>
+                    <!-- Day of Week Chart -->
+                    <div class="glass-panel p-6 rounded-2xl relative">
+                        <h3 class="text-sm tracking-widest text-gray-300 uppercase mb-4 text-primary">Day of Week Performance</h3>
+                        <div class="h-64 w-full flex items-center justify-center">
+                            <canvas id="dayOfWeekChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="glass-panel p-6 rounded-2xl relative">
+                        <h3 class="text-sm tracking-widest text-gray-300 uppercase mb-4 text-primary">Asset Intelligence</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead>
+                                    <tr class="border-b border-dim/50 text-[10px] text-gray-400 uppercase tracking-widest">
+                                        <th class="py-2 px-2">Asset</th>
+                                        <th class="py-2 px-2 text-right">Trades</th>
+                                        <th class="py-2 px-2 text-right">Win Rate</th>
+                                        <th class="py-2 px-2 text-right">Avg W/L</th>
+                                        <th class="py-2 px-2 text-right">Prof Factor</th>
+                                        <th class="py-2 px-2 text-right">Total Net</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="asset-analytics-body" class="text-xs">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="glass-panel p-6 rounded-2xl relative">
+                        <h3 class="text-sm tracking-widest text-gray-300 uppercase mb-4 text-primary">Strategy Performance</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead>
+                                    <tr class="border-b border-dim/50 text-[10px] text-gray-400 uppercase tracking-widest">
+                                        <th class="py-2 px-2">Strategy</th>
+                                        <th class="py-2 px-2 text-right">Trades</th>
+                                        <th class="py-2 px-2 text-right">Win Rate</th>
+                                        <th class="py-2 px-2 text-right">Total Net</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="strategy-analytics-body" class="text-xs">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-calendar" class="view-section hidden">
+                <header class="mb-10 border-b border-primary/20 pb-4">
+                    <span class="text-primary text-xs uppercase tracking-[0.2em]">Monthly Overview</span>
+                    <h2 class="text-3xl font-orbitron font-bold mt-2">CALENDAR JOURNAL</h2>
+                </header>
+                
+                <!-- Monthly Summary -->
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+                    <div class="glass p-4 rounded-xl text-center">
+                        <span class="text-xs uppercase text-gray-400 tracking-wider">Total Trades</span>
+                        <div class="font-bold text-2xl text-white mt-1" id="cal-total-trades">0</div>
+                    </div>
+                    <div class="glass p-4 rounded-xl text-center">
+                        <span class="text-xs uppercase text-gray-400 tracking-wider">Total P/L</span>
+                        <div class="font-bold text-2xl mt-1" id="cal-total-pnl">$0.00</div>
+                    </div>
+                    <div class="glass p-4 rounded-xl text-center">
+                        <span class="text-xs uppercase text-gray-400 tracking-wider">Win Rate</span>
+                        <div class="font-bold text-2xl text-white mt-1" id="cal-win-rate">0%</div>
+                    </div>
+                    <div class="glass p-4 rounded-xl text-center border-b border-success">
+                        <span class="text-xs uppercase text-success tracking-wider">Best Day</span>
+                        <div class="font-bold text-xl text-success mt-1" id="cal-best-day">--</div>
+                    </div>
+                    <div class="glass p-4 rounded-xl text-center border-b border-danger">
+                        <span class="text-xs uppercase text-danger tracking-wider">Worst Day</span>
+                        <div class="font-bold text-xl text-danger mt-1" id="cal-worst-day">--</div>
+                    </div>
+                </div>
+
+                <!-- Calendar Grid Controls -->
+                <div class="flex justify-between items-center mb-6">
+                    <button onclick="changeCalendarMonth(-1)" class="glass px-4 py-2 rounded-lg text-primary hover:text-white transition-colors"><span class="material-symbols-outlined">chevron_left</span> Prev</button>
+                    <h3 id="calendar-month-year" class="text-2xl font-bold font-orbitron uppercase text-white tracking-widest">Month Year</h3>
+                    <button onclick="changeCalendarMonth(1)" class="glass px-4 py-2 rounded-lg text-primary hover:text-white transition-colors">Next <span class="material-symbols-outlined">chevron_right</span></button>
+                </div>
+
+                <!-- Calendar Grid -->
+                <div class="glass-panel p-6 rounded-2xl">
+                    <div class="grid grid-cols-7 gap-4 mb-4 text-center text-xs font-bold text-gray-400 uppercase tracking-widest">
+                        <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+                    </div>
+                    <div id="calendar-grid" class="grid grid-cols-7 gap-4">
+                        <!-- Calendar days injected here -->
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script src="script.js?v=3"></script>
+</body>
+</html>
