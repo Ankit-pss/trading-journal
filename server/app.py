@@ -9,11 +9,13 @@ app = Flask(__name__, static_folder='../client')
 DATABASE = os.path.join(os.path.dirname(__file__), 'database.db')
 
 def get_db():
+    """Establish and return a database connection."""
     conn = sqlite3.connect(DATABASE)
     conn.row_factory = sqlite3.Row
     return conn
 
 def init_db():
+    """Initialize the database with the required tables and columns."""
     with app.app_context():
         conn = get_db()
         # Create trades table
@@ -54,14 +56,17 @@ init_db()
 
 @app.route('/')
 def index():
+    """Serve the main frontend application."""
     return send_from_directory(app.static_folder, 'index.html')
 
 @app.route('/<path:path>')
 def static_files(path):
+    """Serve static files for the frontend."""
     return send_from_directory(app.static_folder, path)
 
 @app.route('/api/stats', methods=['GET'])
 def get_stats():
+    """Retrieve basic trading statistics and equity curve data."""
     conn = get_db()
     
     where_clauses = []
@@ -147,6 +152,7 @@ def get_stats():
 
 @app.route('/api/trades', methods=['GET', 'POST'])
 def handle_trades():
+    """Handle creating new trades and retrieving the list of trades."""
     if request.method == 'POST':
         is_json = request.is_json
         data = request.json if is_json else request.form
@@ -229,6 +235,7 @@ def handle_trades():
 
 @app.route('/api/trades/<int:trade_id>', methods=['PUT', 'DELETE'])
 def update_delete_trade(trade_id):
+    """Update an existing trade or delete it entirely."""
     conn = get_db()
     
     if request.method == 'DELETE':
@@ -330,6 +337,7 @@ def update_delete_trade(trade_id):
 
 @app.route('/api/analytics', methods=['GET'])
 def get_analytics():
+    """Retrieve advanced analytics, performance metrics, and insights."""
     conn = get_db()
     
     start_date = request.args.get('start_date')
